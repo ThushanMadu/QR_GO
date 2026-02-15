@@ -3,12 +3,10 @@ package main
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"github.com/thushanmadu/qr-go/internal/config"
 	"github.com/thushanmadu/qr-go/internal/logger"
