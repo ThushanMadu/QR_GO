@@ -11,16 +11,22 @@ import (
 	"time"
 
 	"github.com/thushanmadu/qr-go/internal/config"
+	"github.com/thushanmadu/qr-go/internal/logger"
 	"github.com/thushanmadu/qr-go/internal/qr"
 	transport "github.com/thushanmadu/qr-go/internal/transport/http"
 )
 
 func main() {
-	// 1. Load Configuration
+	// 1. Load Configuration (all from env; see .env.example)
 	cfg := config.LoadConfig()
 
-	// 2. Setup Logger (JSON for production)
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	// 2. Setup Logger: text + debug in dev, JSON in prod/live
+	logger := logger.New(logger.Config{
+		Level:  cfg.LogLevel,
+		Format: cfg.LogFormat,
+		Env:    cfg.Env,
+	})
+	logger.Info("Logger initialized", "env", cfg.Env, "log_level", cfg.LogLevel, "log_format", cfg.LogFormat)
 
 	// 3. Initialize Dependencies
 	svc := qr.NewService()
@@ -28,7 +34,7 @@ func main() {
 		MaxBodySize: cfg.MaxBodySize,
 		MinQRSize:   cfg.MinQRSize,
 		MaxQRSize:   cfg.MaxQRSize,
-		DefaultSize: 256,
+		DefaultSize: cfg.DefaultQRSize,
 	})
 
 	// 4. Setup Router
@@ -37,14 +43,14 @@ func main() {
 	mux.HandleFunc("/generate", h.Generate)
 	mux.HandleFunc("/health", h.HealthCheck)
 
-	// 5. Setup Server with Timeouts (Security Best Practice)
+	// 5. Setup Server with Timeouts (all from config)
 	srv := &http.Server{
 		Addr:              fmt.Sprintf(":%s", cfg.Port),
 		Handler:           mux,
 		ReadTimeout:       cfg.ReadTimeout,
-		ReadHeaderTimeout: 2 * time.Second, // Protect against Slowloris
+		ReadHeaderTimeout: cfg.ReadHeaderTimeout,
 		WriteTimeout:      cfg.WriteTimeout,
-		IdleTimeout:       60 * time.Second,
+		IdleTimeout:       cfg.IdleTimeout,
 	}
 
 	// 6. Run Server
