@@ -24,10 +24,16 @@ func main() {
 
 	// 3. Initialize Dependencies
 	svc := qr.NewService()
-	h := transport.NewHandler(svc, logger, cfg.MaxBodySize)
+	h := transport.NewHandler(svc, logger, transport.HandlerConfig{
+		MaxBodySize: cfg.MaxBodySize,
+		MinQRSize:   cfg.MinQRSize,
+		MaxQRSize:   cfg.MaxQRSize,
+		DefaultSize: 256,
+	})
 
 	// 4. Setup Router
 	mux := http.NewServeMux()
+	mux.HandleFunc("/", h.Root)
 	mux.HandleFunc("/generate", h.Generate)
 	mux.HandleFunc("/health", h.HealthCheck)
 
