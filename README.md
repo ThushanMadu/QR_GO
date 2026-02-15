@@ -78,22 +78,44 @@ Common status codes: `400` (bad request), `413` (body too large), `500` (server 
 
 ## Configuration
 
-All settings are optional and use environment variables:
+All settings are optional and come from environment variables. Copy [.env.example](.env.example) to `.env` and change as you wish.
 
-| Variable           | Default   | Description                    |
-|--------------------|-----------|--------------------------------|
-| `PORT`             | `8080`    | HTTP server port               |
-| `READ_TIMEOUT`     | `5s`      | Read timeout                   |
-| `WRITE_TIMEOUT`    | `10s`     | Write timeout                  |
-| `SHUTDOWN_TIMEOUT` | `5s`      | Graceful shutdown timeout      |
-| `MAX_BODY_SIZE`    | `1048576` | Max POST body size (bytes, 1MB)|
-| `MIN_QR_SIZE`      | `64`      | Minimum QR image size (px)     |
-| `MAX_QR_SIZE`      | `512`     | Maximum QR image size (px)     |
+| Variable                | Default     | Description |
+|-------------------------|-------------|-------------|
+| **Server**              |             |             |
+| `PORT`                  | `8080`      | HTTP server port |
+| `READ_TIMEOUT`          | `5s`        | Read timeout |
+| `WRITE_TIMEOUT`         | `10s`       | Write timeout |
+| `READ_HEADER_TIMEOUT`   | `2s`        | Read header timeout (e.g. Slowloris) |
+| `IDLE_TIMEOUT`          | `60s`       | Idle connection timeout |
+| `SHUTDOWN_TIMEOUT`      | `5s`        | Graceful shutdown timeout |
+| **Request / QR**        |             |             |
+| `MAX_BODY_SIZE`         | `1048576`   | Max POST body size (bytes, 1MB) |
+| `MIN_QR_SIZE`           | `64`        | Minimum QR image size (px) |
+| `MAX_QR_SIZE`           | `512`       | Maximum QR image size (px) |
+| `DEFAULT_QR_SIZE`       | `256`       | Default size when `size` is omitted |
+| **Environment & logging** |           |             |
+| `ENV`                   | `development` | `development`, `staging`, `production` (or `prod`/`live`) |
+| `LOG_LEVEL`             | `info`     | `debug`, `info`, `warn`, `error` |
+| `LOG_FORMAT`            | *(auto)*   | `text` or `json`; if unset, text for dev and json for prod |
+
+### Logging: dev vs prod / live
+
+- **Development** (`ENV=development`): human-readable **text** logs; set `LOG_LEVEL=debug` for verbose output.
+- **Production / live** (`ENV=production` or `ENV=live`): **JSON** logs for aggregators; typically `LOG_LEVEL=info` or `warn`.
+
+Override with `LOG_FORMAT=json` or `LOG_FORMAT=text` if you want a specific format regardless of `ENV`.
 
 Example:
 
 ```bash
-PORT=3000 MAX_QR_SIZE=1024 go run cmd/api/main.go
+# Development with debug logs
+cp .env.example .env
+# edit .env: ENV=development, LOG_LEVEL=debug
+make run
+
+# Production-style (JSON logs)
+ENV=production PORT=3000 LOG_LEVEL=warn go run cmd/api/main.go
 ```
 
 ## Build & Run
@@ -117,12 +139,14 @@ make docker-run
 
 ```
 .
-├── cmd/api/main.go          # Entrypoint, server, graceful shutdown
+├── .env.example             # Example env vars (copy to .env)
+├── cmd/api/main.go         # Entrypoint, server, graceful shutdown
 ├── internal/
-│   ├── config/config.go     # Env-based configuration
-│   ├── qr/service.go        # QR generation logic
+│   ├── config/config.go    # Env-based configuration
+│   ├── logger/logger.go    # Env-based logger (text/json, level)
+│   ├── qr/service.go       # QR generation logic
 │   └── transport/http/
-│       └── handler.go       # HTTP handlers
+│       └── handler.go      # HTTP handlers
 ├── go.mod
 ├── Makefile
 ├── Dockerfile
